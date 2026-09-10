@@ -15,7 +15,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY backend/ ./backend/
-COPY legacy/ ./legacy/ 2>/dev/null || true
 COPY .env.example .env
 
 EXPOSE 8000

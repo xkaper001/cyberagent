@@ -8,10 +8,12 @@ services:
     container_name: cyberagents-backend
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
       - APP_ENV=development
       - DEBUG=true
-      - DEMO_MODE=true
+      - DEMO_MODE=false
       - DATABASE_URL=postgresql://cyber_user:cyber_password@postgres:5432/cyberagents_db
       - REDIS_URL=redis://redis:6379/0
       - QDRANT_URL=http://qdrant:6333

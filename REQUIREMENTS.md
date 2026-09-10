@@ -91,13 +91,13 @@ Dependency-ordered. Each phase produces something demoable. Phases 0–4 = Revie
 - `backend/rag/retriever.py`: serves `INITIAL_KNOWLEDGE` mock. → Phase 2
 - `backend/services/mock_data.py`: source of all canned findings/reports/knowledge.
 
-### Phase 0 — Foundation / merge (½ day)  ✅ mostly done
+### Phase 0 — Foundation / merge  ✅ DONE
 - [x] Adopt base as **new repo** → `~/Developer/cyberagents-v2` (friend's git history kept, remote detached)
 - [x] Copy old project's `.env` LLM values in (`llm.kimchi.dev`, `deepseek-v4-flash-0731`), `DEMO_MODE=false`
 - [x] Endpoint verified with a real completion (curl → `ok`)
 - [x] Remove silent simulation fallback → `factory.py` now raises `RuntimeError` if no real key
-- [ ] `docker compose up` brings full stack live locally (backend, frontend, sandbox, db)
-- **Demo**: stack runs, one real LLM call succeeds. *(LLM call ✅; full stack pending)*
+- [x] `docker compose up` brings backend+db+redis+qdrant live (fixed Dockerfile COPY bug, added psycopg2, DEMO_MODE=false)
+- **Demo**: ✅ stack boots, `/api/health` LIVE, `/api/chat` real DNS + auth-gate, LLM endpoint verified.
 
 ### Phase 1 — Real scanning (1 day)
 - [ ] Scanning agent: delete hardcoded `http/https/spring-actuator/ssh` + `ports_count=2`
