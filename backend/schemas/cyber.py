@@ -39,6 +39,7 @@ class FindingSchema(BaseModel):
     title: str
     severity: str # critical | high | medium | low | info
     confidence: int = 90
+    cvssScore: Optional[float] = None
     asset: str
     targetIp: str
     status: str = "active"

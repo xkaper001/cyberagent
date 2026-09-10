@@ -84,9 +84,8 @@ Dependency-ordered. Each phase produces something demoable. Phases 0–4 = Revie
 - Ponytail: smallest working diff, reuse before adding, no speculative scaffolding.
 
 ### Known mocks to kill (inventory — replaces `# MOCK:` tagging)
-- `backend/graph/nodes.py`: research/vulnerability/critic/risk/report nodes all
-  hardcoded (risk `8.4`, critic `96%`, report = `INITIAL_REPORTS[0]`, final
-  response hardcodes CVE-2021-41773). → Phase 2/3
+- `backend/graph/nodes.py`: ✅ all real now — research/vulnerability (NVD, Phase 2),
+  critic (LLM)/risk (CVSS)/report (from findings) (Phase 3). No `8.4`/`96%`/`INITIAL_REPORTS`.
 - `backend/agents/scanning.py`: fallback `http/https/spring-actuator/ssh`, ports=2. → Phase 1
 - `backend/rag/retriever.py`: `INITIAL_KNOWLEDGE` — now only the static browse catalog; pipeline RAG is real (Phase 2 done).
 - `backend/services/mock_data.py`: source of all canned findings/reports/knowledge.
@@ -114,12 +113,13 @@ Dependency-ordered. Each phase produces something demoable. Phases 0–4 = Revie
 - [~] `rag_engine` (retriever.py) still serves the static knowledge **browse catalog** (`/api/resources` + `rag_search` tool) — not in the graph flow; left as a reference catalog, not a pipeline mock. Full Qdrant corpus deferred (Review 2 scope).
 - **Demo**: Apache 2.4.49 → CVE-2021-41773 (9.8) + 4 more; OpenSSH 8.2p1 → CVE-2020-14145 — all live from NVD, closed ports excluded. `backend/tests/test_phase2.py` is the network-free leave-behind.
 
-### Phase 3 — Real critic + risk + report (1–2 days)
-- [ ] Critic: LLM-scored confidence from evidence vs. raw output (no fixed `96%`)
-- [ ] Risk: compute from findings (CVSS-based), not fixed `8.4`
-- [ ] Report agent: generate from actual findings, drop `INITIAL_REPORTS[0]`
-- [ ] `final_response`: templated from real state, no hardcoded CVE-2021-41773
-- **Demo**: 2 targets → 2 different reports (risk, findings, CVEs all differ).
+### Phase 3 — Real critic + risk + report (1–2 days)  ✅ DONE
+- [x] Critic: **real LLM call** (first in pipeline) scores per-finding confidence + verdict from evidence vs. version-only match; deterministic evidence-completeness fallback if LLM down. No fixed `96%`.
+- [x] Risk: composite from real CVSS (`max(cvss)` + small count bonus, capped 10), rejected findings excluded, empty→0.0. No fixed `8.4`.
+- [x] Report: real `ReportSchema` from findings — severity counts, attack surface from open ports, exec summary + roadmap from actual data. Dropped `INITIAL_REPORTS[0]`.
+- [x] `final_response`: templated from real risk/counts/top-CVEs. No hardcoded CVE-2021-41773.
+- [x] Added `cvssScore` to `FindingSchema` so risk uses real numbers.
+- **Demo**: verified — target A (Apache 9.8) → 9.8/Critical, target B (low) → 2.1/Low; live LLM critic returned 85% w/ reasoning. `backend/tests/test_phase3.py` (LLM-free) + live smoke.
 
 ### Phase 4 — Autonomy + exploit advisor + salvage (1 day)
 - [ ] Supervisor/planner loop runs end-to-end unattended after authorization

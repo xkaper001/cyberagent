@@ -4,9 +4,10 @@ from backend.agents.planner import planner_agent
 from backend.agents.recon import recon_agent
 from backend.agents.scanning import scanning_agent
 import datetime
+import json
 from backend.services.cve_lookup import lookup as cve_lookup
-from backend.services.mock_data import INITIAL_REPORTS
-from backend.schemas.cyber import FindingSchema, KnowledgeItemSchema
+from backend.llm.factory import get_llm
+from backend.schemas.cyber import FindingSchema, KnowledgeItemSchema, ReportSchema, FindingsSummarySchema
 
 
 def discovered_services(state):
@@ -41,6 +42,24 @@ def recon_node(state: SecurityState) -> SecurityState:
 
 def scanning_node(state: SecurityState) -> SecurityState:
     return scanning_agent.execute(state)
+
+def _finding_score(f):
+    if f.get("cvssScore") is not None:
+        return float(f["cvssScore"])
+    return {"critical": 9.5, "high": 7.5, "medium": 5.0, "low": 2.0, "info": 0.0}.get(f.get("severity"), 0.0)
+
+
+def _deterministic_confidence(f):
+    score = 50
+    if f.get("cvssScore") is not None:
+        score += 20
+    if f.get("cweId"):
+        score += 10
+    if f.get("references"):
+        score += 10
+    if len(f.get("evidence", [])) >= 2:
+        score += 10
+    return min(score, 99)
 
 def research_node(state: SecurityState) -> SecurityState:
     state["current_agent"] = "research"
@@ -106,6 +125,7 @@ def vulnerability_node(state: SecurityState) -> SecurityState:
                 title=f"{cve['cveId']} in {tech}",
                 severity=cve["severity"],
                 confidence=90,
+                cvssScore=cve.get("cvssScore"),
                 asset=f"{target} ({target_ip})",
                 targetIp=target_ip,
                 status="active",
@@ -137,49 +157,172 @@ def vulnerability_node(state: SecurityState) -> SecurityState:
     state.setdefault("execution_history", []).append(step)
     return state
 
+def _llm_confidence(findings):
+    items = [
+        {"id": f["id"], "cve": f.get("cveId"), "evidence": f.get("evidence", []),
+         "cvss": f.get("cvssScore")}
+        for f in findings
+    ]
+    prompt = (
+        "You are a security findings critic. For each finding, judge how confident "
+        "we should be (0-100) that the CVE genuinely applies to the observed service, "
+        "based on the evidence vs. a version-only match. Reply ONLY with a JSON array of "
+        '{"id": str, "confidence": int, "verdict": "valid"|"needs_review"|"rejected", "reason": str}. '
+        f"Findings: {json.dumps(items)}"
+    )
+    resp = get_llm(temperature=0.0).invoke(prompt)
+    text = getattr(resp, "content", str(resp)).strip()
+    if text.startswith("```"):
+        text = text.split("```")[1].lstrip("json").strip()
+    return {r["id"]: r for r in json.loads(text)}
+
+
 def critic_node(state: SecurityState) -> SecurityState:
+    state["current_agent"] = "critic"
+    findings = state.get("findings", [])
+    mode = "deterministic"
+    verdicts = {}
+
+    if findings:
+        try:
+            verdicts = _llm_confidence(findings)
+            mode = "llm"
+        except Exception as e:
+            state.setdefault("errors", []).append(f"Critic LLM fallback: {e}")
+
+    for f in findings:
+        v = verdicts.get(f["id"])
+        if v and isinstance(v.get("confidence"), int):
+            f["confidence"] = max(0, min(v["confidence"], 100))
+            verdict = v.get("verdict", "valid")
+            f["status"] = "rejected" if verdict == "rejected" else "active"
+            if v.get("reason"):
+                f["agentActivitySummary"] = f"Critic ({verdict}): {v['reason']}"
+        else:
+            f["confidence"] = _deterministic_confidence(f)
+
+    kept = [f for f in findings if f.get("status") != "rejected"]
+    avg = round(sum(f["confidence"] for f in kept) / len(kept)) if kept else 0
     step = {
         "id": "st-crit-1",
         "agentName": "Critic Agent",
         "agentType": "critic",
         "status": "completed",
         "duration": "1.2s",
-        "summary": "Verified finding evidence rigor (96% Confidence - VALID)"
+        "summary": f"Reviewed {len(findings)} finding(s) via {mode}; {len(kept)} retained, avg confidence {avg}%.",
     }
-    state["execution_history"].append(step)
-    state["current_agent"] = "critic"
+    state.setdefault("execution_history", []).append(step)
     return state
 
+def _risk_level(score):
+    if score >= 9.0:
+        return "Critical"
+    if score >= 7.0:
+        return "High"
+    if score >= 4.0:
+        return "Medium"
+    if score > 0:
+        return "Low"
+    return "Informational"
+
+
 def risk_node(state: SecurityState) -> SecurityState:
+    state["current_agent"] = "risk"
+    active = [f for f in state.get("findings", []) if f.get("status") != "rejected"]
+    scores = [_finding_score(f) for f in active]
+
+    if scores:
+        base = max(scores)
+        extra = sum(1 for f in active if f.get("severity") in ("critical", "high")) - 1
+        risk = min(round(base + max(extra, 0) * 0.1, 1), 10.0)
+    else:
+        risk = 0.0
+
+    state["risk_score"] = risk
     step = {
         "id": "st-risk-1",
         "agentName": "Risk Agent",
         "agentType": "risk",
         "status": "completed",
         "duration": "1.1s",
-        "summary": "Calculated composite risk score: 8.4 / 10 (High Severity)"
+        "summary": f"Composite risk {risk}/10 ({_risk_level(risk)}) from {len(active)} finding(s).",
     }
-    state["execution_history"].append(step)
-    state["current_agent"] = "risk"
-    state["risk_score"] = 8.4
+    state.setdefault("execution_history", []).append(step)
     return state
 
 def report_node(state: SecurityState) -> SecurityState:
+    import datetime as _dt
+    state["current_agent"] = "report"
+    target = state.get("target", "")
+    active = [f for f in state.get("findings", []) if f.get("status") != "rejected"]
+    risk = state.get("risk_score", 0.0)
+    level = _risk_level(risk)
+
+    counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
+    for f in active:
+        counts[f.get("severity", "info")] = counts.get(f.get("severity", "info"), 0) + 1
+
+    services = discovered_services(state)
+    ports = sorted({s["port"] for s in services})
+    attack_surface = (
+        f"{len(ports)} open service port(s) with version banners: "
+        + ", ".join(f"{s['port']}/{s['service']}" for s in services)
+        if services else "No versioned services identified in the scanned range."
+    )
+
+    top = sorted(active, key=_finding_score, reverse=True)
+    top_cves = [f["cveId"] for f in top[:3] if f.get("cveId")]
+    exec_summary = (
+        f"Automated multi-agent assessment of {target} discovered {len(services)} versioned "
+        f"service(s) and {len(active)} CVE finding(s) (composite risk {risk}/10, {level}). "
+        + (f"Highest-impact: {', '.join(top_cves)}." if top_cves else "No CVEs matched.")
+    )
+
+    roadmap, seen_rem = [], set()
+    for f in top:
+        rem = f.get("remediation")
+        if rem and rem not in seen_rem:
+            seen_rem.add(rem)
+            roadmap.append(rem)
+    roadmap = roadmap[:5]
+
+    report = ReportSchema(
+        id=f"rep-{int(_dt.datetime.utcnow().timestamp())}",
+        title=f"Security Assessment — {target}",
+        date=_dt.datetime.utcnow().date().isoformat(),
+        riskScore=risk,
+        riskLevel=level,
+        findingsCount=len(active),
+        status="Completed",
+        target=target,
+        executiveSummary=exec_summary,
+        attackSurface=attack_surface,
+        findingsSummary=FindingsSummarySchema(**counts),
+        remediationRoadmap=roadmap,
+    )
+    state["report"] = report.dict()
+
+    lines = [
+        f"### Security Assessment Result for `{target}`",
+        "",
+        f"**Composite Risk Score**: `{risk} / 10` (**{level}**)",
+        "",
+        f"Discovered **{len(services)} versioned service(s)** and **{len(active)} CVE finding(s)** "
+        f"(critical: {counts['critical']}, high: {counts['high']}, medium: {counts['medium']}, "
+        f"low: {counts['low']}).",
+    ]
+    if top_cves:
+        lines.append("")
+        lines.append("Highest-impact: " + ", ".join(top_cves) + ".")
+    state["final_response"] = "\n".join(lines)
+
     step = {
         "id": "st-rep-1",
         "agentName": "Report Agent",
         "agentType": "report",
         "status": "completed",
         "duration": "1.7s",
-        "summary": "Compiled structured security report and remediation roadmap"
+        "summary": f"Compiled report: {len(active)} finding(s), risk {risk}/10 ({level}).",
     }
-    state["execution_history"].append(step)
-    state["current_agent"] = "report"
-    state["report"] = INITIAL_REPORTS[0].dict()
-    state["final_response"] = (
-        f"### Security Assessment Result for target `{state['target']}`\n\n"
-        f"**Composite Risk Score**: `8.4 / 10` (**HIGH**)\n\n"
-        f"During our automated multi-agent run on target `{state['target']}`, CyberAgents identified **5 active services**, "
-        f"leading to **1 Critical RCE vulnerability (CVE-2021-41773)** and **1 High severity credential exposure**."
-    )
+    state.setdefault("execution_history", []).append(step)
     return state
