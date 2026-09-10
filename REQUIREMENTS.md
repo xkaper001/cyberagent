@@ -88,7 +88,7 @@ Dependency-ordered. Each phase produces something demoable. Phases 0–4 = Revie
   hardcoded (risk `8.4`, critic `96%`, report = `INITIAL_REPORTS[0]`, final
   response hardcodes CVE-2021-41773). → Phase 2/3
 - `backend/agents/scanning.py`: fallback `http/https/spring-actuator/ssh`, ports=2. → Phase 1
-- `backend/rag/retriever.py`: serves `INITIAL_KNOWLEDGE` mock. → Phase 2
+- `backend/rag/retriever.py`: `INITIAL_KNOWLEDGE` — now only the static browse catalog; pipeline RAG is real (Phase 2 done).
 - `backend/services/mock_data.py`: source of all canned findings/reports/knowledge.
 
 ### Phase 0 — Foundation / merge  ✅ DONE
@@ -107,11 +107,12 @@ Dependency-ordered. Each phase produces something demoable. Phases 0–4 = Revie
 - [x] Bonus: killed worker `entrypoint.py` FileNotFoundError mock (fake Apache 2.4.49 → fed downstream fake CVE); now returns `TOOL_NOT_INSTALLED`
 - **Demo**: proven via real nmap-XML fixtures (2 hosts → different ports/services, closed excluded, empty→empty). Live external scan deferred — needs an authorized in-scope target; `backend/tests/test_scanning_real.py` is the leave-behind check.
 
-### Phase 2 — Real vulnerability mapping (1–2 days)
-- [ ] Service version → CVE lookup via NVD or OSV API (pick one; cache responses)
-- [ ] Vuln agent emits candidate findings with real CVE IDs + evidence links
-- [ ] RAG: confirm retriever returns real docs (OWASP/CWE/MITRE), not `INITIAL_KNOWLEDGE`
-- **Demo**: a discovered service version resolves to a real advisory.
+### Phase 2 — Real vulnerability mapping (1–2 days)  ✅ DONE
+- [x] Service version → CVE lookup via **NVD 2.0** (`backend/services/cve_lookup.py`), CPE-first (`virtualMatchString` from nmap CPEs) with keyword fallback; `lru_cache`d
+- [x] Vuln agent (`vulnerability_node`) emits real `FindingSchema` from discovered services: real CVE IDs, CVSS→severity, CWE, NVD references, nmap banner as evidence; deduped + idempotent
+- [x] `research_node` now builds real NVD `KnowledgeItem`s per discovered service (dropped `rag_engine`/`INITIAL_KNOWLEDGE` from the pipeline path)
+- [~] `rag_engine` (retriever.py) still serves the static knowledge **browse catalog** (`/api/resources` + `rag_search` tool) — not in the graph flow; left as a reference catalog, not a pipeline mock. Full Qdrant corpus deferred (Review 2 scope).
+- **Demo**: Apache 2.4.49 → CVE-2021-41773 (9.8) + 4 more; OpenSSH 8.2p1 → CVE-2020-14145 — all live from NVD, closed ports excluded. `backend/tests/test_phase2.py` is the network-free leave-behind.
 
 ### Phase 3 — Real critic + risk + report (1–2 days)
 - [ ] Critic: LLM-scored confidence from evidence vs. raw output (no fixed `96%`)
