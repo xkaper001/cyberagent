@@ -1,0 +1,2 @@
+{"input": {"target": "10.10.14.5", "tool": "nmap", "profile": "service_detection"}, "expected": {"execution_id": "exec-n101", "status": "completed", "parsed_result": {"hosts": [{"address": "10.10.14.5", "status": "up", "ports": [{"port": 80, "service": "http", "product": "Apache httpd", "version": "2.4.49"}]}]}}}
+{"input": {"target": "10.10.14.5", "tool": "nmap", "profile": "unapproved_custom_exploit"}, "expected": {"execution_id": "exec-e101", "status": "failed", "error": {"code": "INVALID_TOOL_PROFILE", "message": "Profile 'unapproved_custom_exploit' is not approved."}}}

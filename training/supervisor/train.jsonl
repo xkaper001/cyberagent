@@ -1,0 +1,3 @@
+{"input": {"objective": "Audit 10.10.14.5 for security vulnerabilities", "scope": ["10.10.14.0/24"]}, "expected": {"action": "delegate", "agent": "planner", "valid_scope": true}}
+{"input": {"objective": "Scan host 8.8.8.8 for open ports", "scope": ["10.10.14.0/24"]}, "expected": {"action": "abort", "agent": "supervisor", "valid_scope": false, "reason": "Target 8.8.8.8 out of scope"}}
+{"input": {"objective": "Perform recon on target 192.168.10.15", "scope": ["192.168.10.0/24"]}, "expected": {"action": "delegate", "agent": "planner", "valid_scope": true}}

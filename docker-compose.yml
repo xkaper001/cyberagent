@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cyberagents-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=development
+      - DEBUG=true
+      - DEMO_MODE=true
+      - DATABASE_URL=postgresql://cyber_user:cyber_password@postgres:5432/cyberagents_db
+      - REDIS_URL=redis://redis:6379/0
+      - QDRANT_URL=http://qdrant:6333
+      - SECURITY_WORKER_IMAGE=cyberagents/security-worker:latest
+    depends_on:
+      - postgres
+      - redis
+      - qdrant
+    restart: unless-stopped
+
+  sandbox:
+    build:
+      context: ./security-worker
+      dockerfile: Dockerfile
+    image: cyberagents/security-worker:latest
+    container_name: cyberagents-sandbox
+    volumes:
+      - workspace_data:/workspace
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: cyberagents-postgres
+    environment:
+      POSTGRES_USER: cyber_user
+      POSTGRES_PASSWORD: cyber_password
+      POSTGRES_DB: cyberagents_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: cyberagents-redis
+    ports:
+      - "6379:6379"
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: cyberagents-qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  workspace_data:

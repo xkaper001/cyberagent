@@ -1,0 +1,41 @@
+{
+  "nmap": {
+    "host_discovery": {
+      "command_template": ["nmap", "-sn", "-oX", "-", "{target}"],
+      "timeout": 60,
+      "parser": "nmap_xml"
+    },
+    "service_detection": {
+      "command_template": ["nmap", "-sV", "-p", "{ports}", "-oX", "-", "{target}"],
+      "default_ports": "80,443,8080,22,5432",
+      "timeout": 300,
+      "parser": "nmap_xml"
+    },
+    "approved_assessment": {
+      "command_template": ["nmap", "-sV", "-F", "--version-intensity", "5", "-oX", "-", "{target}"],
+      "timeout": 300,
+      "parser": "nmap_xml"
+    }
+  },
+  "dns_lookup": {
+    "standard_resolution": {
+      "command_template": ["dig", "+short", "{target}"],
+      "timeout": 30,
+      "parser": "dig_text"
+    }
+  },
+  "http_probe": {
+    "header_inspection": {
+      "command_template": ["curl", "-sS", "-I", "--max-time", "10", "{target}"],
+      "timeout": 30,
+      "parser": "http_headers"
+    }
+  },
+  "http_header_analysis": {
+    "header_inspection": {
+      "command_template": ["curl", "-sS", "-I", "--max-time", "10", "{target}"],
+      "timeout": 30,
+      "parser": "http_headers"
+    }
+  }
+}

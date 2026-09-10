@@ -1,7 +1,30 @@
+# Environment & Secrets
 .env
+*.env.local
+
+# Python
 __pycache__/
 *.pyc
-.DS_Store
-build/
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+*.db
+*.sqlite3
+cyberagents.db
+data/
+
+# Node & Frontend
+node_modules/
 dist/
+build/
+.vite/
+*.log
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
 *.spec

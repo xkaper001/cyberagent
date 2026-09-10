@@ -1,0 +1,2 @@
+{"input": {"objective": "Assess web server on 10.10.14.5"}, "expected": {"plan_id": "plan-1", "steps": [{"id": "s1", "agent": "recon"}, {"id": "s2", "agent": "scanning"}, {"id": "s3", "agent": "research"}]}}
+{"input": {"objective": "Recon domain target lab.internal"}, "expected": {"plan_id": "plan-2", "steps": [{"id": "s1", "agent": "recon"}]}}
