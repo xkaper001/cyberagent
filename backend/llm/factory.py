@@ -20,12 +20,14 @@ def get_llm(
     logger.info(f"Instantiating LLM model: {provider} / {model_name}")
 
     if provider.lower() == "openai":
-        effective_key = api_key if api_key and not api_key.startswith("sk-demo") and api_key != "demo-key" else os.getenv("OPENAI_API_KEY", "sk-fake-key-demo")
-        if effective_key == "sk-fake-key-demo":
-            logger.warning("OpenAI provider is configured but OPENAI_API_KEY is missing or using placeholder in .env. Falling back to structured agent simulation.")
+        if not api_key or api_key.startswith("sk-demo") or api_key in ("demo-key", "sk-fake-key-demo"):
+            raise RuntimeError(
+                "No real LLM_API_KEY configured. Set LLM_API_KEY/LLM_BASE_URL/LLM_MODEL in .env. "
+                "Simulation fallback removed in v2."
+            )
         return ChatOpenAI(
             model=model_name,
-            api_key=effective_key,
+            api_key=api_key,
             base_url=base_url if base_url and base_url != "https://api.openai.com/v1" else None,
             temperature=temperature,
         )
