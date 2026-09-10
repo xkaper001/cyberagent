@@ -76,21 +76,15 @@ def main():
             "error": "TIMEOUT"
         }))
         sys.exit(0)
-    except FileNotFoundError as fnf:
+    except FileNotFoundError:
         duration = round(time.time() - start_time, 2)
-        mock_parsed = {
-            "target": target,
-            "hosts": [{"address": target, "status": "up", "ports": [{"port": 80, "service": "http", "product": "Apache httpd", "version": "2.4.49"}]}],
-            "raw_parsed": True,
-            "notice": "Mock result generated (binary not installed locally on host OS)"
-        }
         print(json.dumps({
-            "exit_code": 0,
+            "exit_code": -1,
             "duration": duration,
-            "stdout": f"Mock scan result for {target}",
-            "stderr": "",
-            "parsed_result": mock_parsed,
-            "error": None
+            "stdout": "",
+            "stderr": f"Required binary '{cmd[0]}' not installed in this environment.",
+            "parsed_result": None,
+            "error": f"TOOL_NOT_INSTALLED: {cmd[0]}"
         }))
         sys.exit(0)
     except Exception as e:

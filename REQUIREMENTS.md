@@ -99,12 +99,13 @@ Dependency-ordered. Each phase produces something demoable. Phases 0–4 = Revie
 - [x] `docker compose up` brings backend+db+redis+qdrant live (fixed Dockerfile COPY bug, added psycopg2, DEMO_MODE=false)
 - **Demo**: ✅ stack boots, `/api/health` LIVE, `/api/chat` real DNS + auth-gate, LLM endpoint verified.
 
-### Phase 1 — Real scanning (1 day)
-- [ ] Scanning agent: delete hardcoded `http/https/spring-actuator/ssh` + `ports_count=2`
-- [ ] Use real nmap JSON from sandbox; empty result = empty, not fake
-- [ ] Recon agent: confirm DNS/HTTP-header inspection is real (fix if mocked)
-- [ ] Evidence entries carry raw tool output, not prose summaries
-- **Demo**: scan 2 targets → genuinely different open-ports/services.
+### Phase 1 — Real scanning (1 day)  ✅ DONE
+- [x] Scanning agent: deleted hardcoded `http/https/spring-actuator/ssh` + `ports_count=2`
+- [x] Use real nmap JSON from sandbox; empty result = empty, not fake (only `state==open` ports)
+- [x] Recon agent: was faking `Apache/2.4.49` banner + a fake TLS line + discarding real IPs → now emits real resolved IPs + real Server header, honest when absent
+- [x] Evidence entries carry raw tool output; full tool job pushed to `state["tool_results"]` for Phase 2
+- [x] Bonus: killed worker `entrypoint.py` FileNotFoundError mock (fake Apache 2.4.49 → fed downstream fake CVE); now returns `TOOL_NOT_INSTALLED`
+- **Demo**: proven via real nmap-XML fixtures (2 hosts → different ports/services, closed excluded, empty→empty). Live external scan deferred — needs an authorized in-scope target; `backend/tests/test_scanning_real.py` is the leave-behind check.
 
 ### Phase 2 — Real vulnerability mapping (1–2 days)
 - [ ] Service version → CVE lookup via NVD or OSV API (pick one; cache responses)

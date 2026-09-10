@@ -15,7 +15,6 @@ class ScanningAgent:
     def execute(self, state: SecurityState) -> SecurityState:
         target = state.get("target", "10.10.14.5")
 
-        # Invoke Nmap scan via Tool Registry
         nmap_job = tool_registry.execute_tool(
             tool_name="nmap",
             input_data={"target": target, "options": {"ports": "80,443,8080,22"}},
@@ -23,22 +22,46 @@ class ScanningAgent:
         )
         parsed = nmap_job.get("output") or {}
         hosts = parsed.get("hosts", [])
-        ports_count = len(hosts[0].get("ports", [])) if hosts else 2
+        open_ports = [
+            p for h in hosts for p in h.get("ports", [])
+            if p.get("state") == "open"
+        ]
 
-        state["evidence"].extend([
-            f"Port scan result: {ports_count} open ports identified on target {target}",
-            f"Active services: http, https, spring-actuator, ssh"
-        ])
         state["current_agent"] = "scanning"
+        state.setdefault("evidence", [])
+        state.setdefault("tool_results", [])
+        state["tool_results"].append(nmap_job)
+
+        err = nmap_job.get("error")
+        if err:
+            msg = err.get("message") if isinstance(err, dict) else str(err)
+            state["evidence"].append(f"Nmap scan on {target} failed: {msg}")
+            summary = f"Nmap scan on {target} failed: {msg}"
+        elif open_ports:
+            for p in open_ports:
+                svc = p.get("service") or "unknown"
+                banner = " ".join(x for x in (p.get("product"), p.get("version")) if x)
+                detail = f"{svc} ({banner})" if banner else svc
+                state["evidence"].append(
+                    f"Open port {p['port']}/{p.get('protocol', 'tcp')} on {target}: {detail}"
+                )
+            summary = (
+                f"Scanned {target} via Nmap. {len(open_ports)} open port(s): "
+                + ", ".join(str(p["port"]) for p in open_ports)
+            )
+        else:
+            state["evidence"].append(f"Nmap scan on {target}: no open ports in the scanned range.")
+            summary = f"Scanned {target} via Nmap. No open ports found."
 
         step = {
             "id": "st-scan-1",
             "agentName": "Scanning Agent",
             "agentType": "scanning",
             "status": "completed",
-            "duration": "3.5s",
-            "summary": f"Scanned target {target} via Nmap XML parser. Found {ports_count} active open ports."
+            "duration": nmap_job.get("duration", "0s"),
+            "summary": summary
         }
+        state.setdefault("execution_history", [])
         state["execution_history"].append(step)
         return state
 

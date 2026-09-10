@@ -15,36 +15,45 @@ class ReconAgent:
     def execute(self, state: SecurityState) -> SecurityState:
         target = state.get("target", "10.10.14.5")
 
-        # Execute DNS Lookup via Tool Registry
         dns_job = tool_registry.execute_tool("dns_lookup", {"target": target}, profile="standard_resolution")
-        dns_out = dns_job.get("output") or {}
-
-        # Execute HTTP Header Probe via Tool Registry
         http_job = tool_registry.execute_tool("http_probe", {"target": target}, profile="header_inspection")
-        http_out = http_job.get("output") or {}
 
-        out_data = http_job.get("output") or {}
-        server_banner = "Apache/2.4.49"
-        if isinstance(out_data, dict) and out_data.get("server") and out_data["server"] != "Unknown Web Server":
-            server_banner = out_data["server"]
-
-        state["evidence"].extend([
-            f"DNS resolution: Host {target} resolved.",
-            f"HTTP Server Banner: {server_banner}",
-            f"TLS/SSL details inspected for {target}"
-        ])
         state["current_agent"] = "recon"
+        state.setdefault("evidence", [])
+        state.setdefault("tool_results", [])
+        state["tool_results"].extend([dns_job, http_job])
+
+        dns_out = dns_job.get("output") or {}
+        ips = dns_out.get("resolved_ips") or []
+        if dns_job.get("error"):
+            state["evidence"].append(f"DNS lookup on {target} failed: {dns_job.get('error')}")
+        elif ips:
+            state["evidence"].append(f"DNS resolution for {target}: {', '.join(ips)}")
+        else:
+            state["evidence"].append(f"DNS resolution for {target}: no records returned.")
+
+        http_out = http_job.get("output") or {}
+        if http_job.get("error"):
+            state["evidence"].append(f"HTTP probe on {target} failed: {http_job.get('error')}")
+        else:
+            banner = http_out.get("server")
+            status_line = http_out.get("status_line")
+            if banner and banner != "Unknown Web Server":
+                state["evidence"].append(f"HTTP Server banner for {target}: {banner}")
+            elif status_line:
+                state["evidence"].append(f"HTTP response for {target}: {status_line} (no Server header)")
+            else:
+                state["evidence"].append(f"HTTP probe on {target}: no headers returned.")
 
         step = {
             "id": "st-recon-1",
             "agentName": "Recon Agent",
             "agentType": "recon",
             "status": "completed",
-            "duration": "2.1s",
+            "duration": dns_job.get("duration", "0s"),
             "summary": f"Executed DNS & HTTP reconnaissance on {target} via isolated worker."
         }
-        if "execution_history" not in state or state["execution_history"] is None:
-            state["execution_history"] = []
+        state.setdefault("execution_history", [])
         state["execution_history"].append(step)
         return state
 
