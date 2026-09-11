@@ -1,52 +1,35 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  darkMode: 'class',
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
-        cyber: {
-          bg: '#0B0E14',
-          sidebar: '#0D1118',
-          card: '#121722',
-          surface: '#171E2C',
-          hover: '#1E2738',
-          border: '#242F42',
-          'border-light': '#2E3B52',
-          text: '#F1F5F9',
-          muted: '#94A3B8',
-          subtle: '#64748B',
-          accent: '#6366F1',
-          'accent-glow': 'rgba(99, 102, 241, 0.15)',
-          cyan: '#38BDF8',
-          emerald: '#10B981',
-          rose: '#F43F5E',
-          amber: '#F59E0B',
-          purple: '#A855F7',
-        }
+        ink: {
+          0: '#ffffff',
+          50: '#fafafa',
+          100: '#f4f4f4',
+          200: '#e6e6e6',
+          300: '#d1d1d1',
+          400: '#a3a3a3',
+          500: '#737373',
+          600: '#525252',
+          700: '#3f3f3f',
+          800: '#262626',
+          900: '#141414',
+          950: '#0a0a0a',
+        },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-      },
-      boxShadow: {
-        'glow-accent': '0 0 20px -5px rgba(99, 102, 241, 0.25)',
-        'glow-cyan': '0 0 20px -5px rgba(56, 189, 248, 0.25)',
-        'glow-rose': '0 0 20px -5px rgba(244, 63, 94, 0.25)',
-        'cyber': '0 10px 30px -10px rgba(0, 0, 0, 0.5)',
-      },
-      animation: {
-        'pulse-subtle': 'pulseSubtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'scanline': 'scanline 8s linear infinite',
+        sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       keyframes: {
-        pulseSubtle: {
-          '0%, 100%': { opacity: 1 },
-          '50%': { opacity: 0.6 },
-        },
+        breathe: { '0%,100%': { opacity: '1' }, '50%': { opacity: '0.3' } },
+        slideUp: { '0%': { opacity: '0', transform: 'translateY(4px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+      },
+      animation: {
+        breathe: 'breathe 1.3s ease-in-out infinite',
+        slideUp: 'slideUp 0.18s ease-out',
       },
     },
   },
