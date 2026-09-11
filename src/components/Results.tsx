@@ -12,7 +12,7 @@ const Bar: React.FC<{ value?: number | null }> = ({ value }) => (
 const FindingRow: React.FC<{ f: Finding }> = ({ f }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-ink-200">
+    <div className="border-b border-ink-300">
       <button onClick={() => setOpen((o) => !o)} className="w-full text-left px-8 py-4 hover:bg-ink-50 flex items-center gap-4">
         <span className="font-mono text-sm font-medium w-40 shrink-0">{f.cveId || '—'}</span>
         <span className="flex-1 min-w-0">
@@ -52,7 +52,7 @@ export const Results: React.FC<{ state: AssessmentState }> = ({ state }) => {
   return (
     <section className="flex flex-col h-full min-w-0 overflow-y-auto">
       {/* Risk header */}
-      <div className="px-8 py-6 border-b border-ink-200">
+      <div className="px-8 py-6 border-b border-ink-300">
         <div className="flex items-end justify-between gap-4">
           <div>
             <div className="font-mono text-xs tracking-[0.15em] text-ink-500 mb-2">COMPOSITE RISK</div>
@@ -70,7 +70,7 @@ export const Results: React.FC<{ state: AssessmentState }> = ({ state }) => {
       </div>
 
       {/* Findings */}
-      <div className="border-b border-ink-200">
+      <div className="border-b border-ink-300">
         <div className="px-8 py-4 flex items-center justify-between">
           <h2 className="font-mono text-xs tracking-[0.15em] text-ink-500">FINDINGS</h2>
           <span className="font-mono text-xs text-ink-400">{active.length}</span>

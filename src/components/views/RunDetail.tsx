@@ -6,7 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 
 export const RunDetail: React.FC<{ run: RunRecord; onBack: () => void }> = ({ run, onBack }) => (
   <div className="flex flex-col h-full min-w-0">
-    <div className="h-20 flex items-center gap-4 px-8 border-b border-ink-200">
+    <div className="h-20 flex items-center gap-4 px-8 border-b border-ink-300">
       <button onClick={onBack} className="w-9 h-9 border border-ink-300 flex items-center justify-center hover:border-ink-950 shrink-0">
         <ArrowLeft className="w-4 h-4" />
       </button>

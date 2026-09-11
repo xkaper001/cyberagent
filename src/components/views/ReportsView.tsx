@@ -10,7 +10,7 @@ export const ReportsView: React.FC<{
   const reported = runs.filter((r) => r.report || (r.risk != null && r.status === 'done'));
   return (
     <div className="h-full overflow-y-auto">
-      <div className="px-10 py-8 border-b border-ink-200">
+      <div className="px-10 py-8 border-b border-ink-300">
         <h1 className="text-2xl font-semibold">Reports</h1>
         <p className="text-ink-500 mt-2">Generated from completed assessments. {reported.length} report{reported.length === 1 ? '' : 's'}.</p>
       </div>
@@ -18,7 +18,7 @@ export const ReportsView: React.FC<{
       {reported.length === 0 ? (
         <p className="px-10 py-8 text-ink-400">No reports yet. Complete an assessment in the Console.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-px bg-ink-200 border-b border-ink-200">
+        <div className="grid grid-cols-2 gap-px bg-ink-300 border-b border-ink-300">
           {reported.map((r) => {
             const active = r.findings.filter((f) => f.status !== 'rejected').length;
             return (

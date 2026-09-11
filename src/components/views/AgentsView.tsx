@@ -7,7 +7,7 @@ const KIND_LABEL: Record<string, string> = {
 
 export const AgentsView: React.FC = () => (
   <div className="h-full overflow-y-auto">
-    <div className="px-10 py-8 border-b border-ink-200">
+    <div className="px-10 py-8 border-b border-ink-300">
       <h1 className="text-2xl font-semibold">Autonomous Agent</h1>
       <p className="text-ink-500 mt-2 max-w-2xl leading-relaxed">
         A single LLM-driven agent runs each assessment. It is given the toolbox below and decides
@@ -25,7 +25,7 @@ export const AgentsView: React.FC = () => (
 
     <div className="px-10 py-8">
       <h2 className="font-mono text-xs tracking-[0.15em] text-ink-500 mb-5">TOOLBOX</h2>
-      <div className="grid grid-cols-2 gap-px bg-ink-200 border border-ink-200">
+      <div className="grid grid-cols-2 gap-px bg-ink-300 border border-ink-300">
         {TOOLBOX.map((t) => (
           <div key={t.name} className="bg-white p-6">
             <div className="flex items-baseline justify-between gap-3">

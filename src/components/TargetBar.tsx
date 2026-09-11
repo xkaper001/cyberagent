@@ -21,7 +21,7 @@ export const TargetBar: React.FC<{
   };
 
   return (
-    <header className="border-b border-ink-200 bg-white">
+    <header className="border-b border-ink-300 bg-white">
       <div className="flex items-center gap-6 px-8 h-20">
         <form onSubmit={submit} className="flex items-center gap-3 flex-1 min-w-0">
           <span className="font-mono text-xs text-ink-400 shrink-0">TARGET</span>

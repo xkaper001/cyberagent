@@ -12,8 +12,8 @@ export const Trace: React.FC<{ entries: TraceEntry[]; running: boolean }> = ({ e
   useEffect(() => { end.current?.scrollIntoView({ behavior: 'smooth' }); }, [entries.length]);
 
   return (
-    <section className="flex flex-col h-full border-r border-ink-200 min-w-0">
-      <div className="px-8 py-4 border-b border-ink-200">
+    <section className="flex flex-col h-full border-r border-ink-300 min-w-0">
+      <div className="px-8 py-4 border-b border-ink-300">
         <h2 className="font-mono text-xs tracking-[0.15em] text-ink-500">AGENT TRACE</h2>
       </div>
       <div className="flex-1 overflow-y-auto px-8 py-6">

@@ -30,7 +30,7 @@ export const ConsoleView: React.FC<{
       )}
 
       {state.status === 'error' && (
-        <div className="border-b border-ink-200 px-8 py-3 text-sm font-mono">
+        <div className="border-b border-ink-300 px-8 py-3 text-sm font-mono">
           <span className="text-ink-400">ERROR </span>{state.error}
         </div>
       )}
