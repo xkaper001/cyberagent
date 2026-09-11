@@ -23,11 +23,6 @@ export const TargetBar: React.FC<{
   return (
     <header className="border-b border-ink-200 bg-white">
       <div className="flex items-center gap-6 px-8 h-20">
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="w-6 h-6 bg-ink-950" />
-          <span className="font-mono text-xs tracking-[0.2em] font-semibold">CYBERAGENTS</span>
-        </div>
-
         <form onSubmit={submit} className="flex items-center gap-3 flex-1 min-w-0">
           <span className="font-mono text-xs text-ink-400 shrink-0">TARGET</span>
           <input

@@ -1,41 +1,49 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAssessment } from './lib/useAssessment';
-import { TargetBar } from './components/TargetBar';
-import { Trace } from './components/Trace';
-import { Results } from './components/Results';
+import { loadRuns, saveRun, clearRuns, RunRecord } from './lib/runsStore';
+import { Sidebar, ViewId } from './components/Sidebar';
+import { ConsoleView } from './components/views/ConsoleView';
+import { AgentsView } from './components/views/AgentsView';
+import { ReportsView } from './components/views/ReportsView';
+import { HistoryView } from './components/views/HistoryView';
+import { RunDetail } from './components/views/RunDetail';
 
 export const App: React.FC = () => {
   const { state, run, confirmAuth, reset } = useAssessment();
-  const running = state.status === 'running';
+  const [view, setView] = useState<ViewId>('console');
+  const [runs, setRuns] = useState<RunRecord[]>(() => loadRuns());
+  const [opened, setOpened] = useState<RunRecord | null>(null);
+  const saved = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if ((state.status === 'done' || state.status === 'error') && state.id && !saved.current.has(state.id)) {
+      saved.current.add(state.id);
+      setRuns(saveRun(state));
+    }
+  }, [state.status, state.id]);
+
+  const goTo = (v: ViewId) => { setOpened(null); setView(v); };
+  const openRun = (r: RunRecord) => setOpened(r);
+
+  const runFromConsole = (t: string) => { setOpened(null); run(t); };
+
+  const body = () => {
+    if (opened && (view === 'reports' || view === 'history')) {
+      return <RunDetail run={opened} onBack={() => setOpened(null)} />;
+    }
+    switch (view) {
+      case 'agents': return <AgentsView />;
+      case 'reports': return <ReportsView runs={runs} onOpen={openRun} />;
+      case 'history': return <HistoryView runs={runs} onOpen={openRun} onClear={() => { setRuns(clearRuns()); }} />;
+      default:
+        return <ConsoleView state={state} onRun={runFromConsole} onConfirm={confirmAuth} onReset={reset} />;
+    }
+  };
 
   return (
-    <div className="flex flex-col h-full bg-white text-ink-950">
-      <TargetBar status={state.status} onRun={run} onReset={reset} />
-
-      {state.status === 'awaiting-auth' && (
-        <div className="border-b border-ink-950 bg-ink-950 text-white px-8 py-4 flex items-center justify-between gap-6">
-          <div className="text-sm">
-            <span className="font-mono text-xs tracking-wider text-ink-400">AUTHORIZATION</span>{' '}
-            Confirm you are authorized to test{' '}
-            <span className="font-mono font-medium">{state.auth?.target}</span>
-            {state.auth?.ip && <span className="text-ink-400"> ({state.auth.ip})</span>}. No tool runs until you confirm.
-          </div>
-          <button onClick={confirmAuth} className="h-10 px-6 bg-white text-ink-950 text-sm font-medium hover:bg-ink-200 shrink-0">
-            Confirm &amp; Run
-          </button>
-        </div>
-      )}
-
-      {state.status === 'error' && (
-        <div className="border-b border-ink-200 px-8 py-3 text-sm font-mono">
-          <span className="text-ink-400">ERROR </span>{state.error}
-        </div>
-      )}
-
-      <main className="flex-1 grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] min-h-0">
-        <Trace entries={state.trace} running={running} />
-        <Results state={state} />
-      </main>
+    <div className="flex h-full bg-white text-ink-950">
+      <Sidebar view={view} onChange={goTo} runCount={runs.length} />
+      <main className="flex-1 min-w-0">{body()}</main>
     </div>
   );
 };

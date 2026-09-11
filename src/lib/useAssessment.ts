@@ -37,6 +37,8 @@ export interface Report {
 }
 
 export interface AssessmentState {
+  id?: string;
+  startedAt?: string;
   status: RunStatus;
   target: string;
   trace: TraceEntry[];
@@ -50,6 +52,8 @@ export interface AssessmentState {
 }
 
 const empty = (target: string): AssessmentState => ({
+  id: `run-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  startedAt: new Date().toISOString(),
   status: 'running', target, trace: [], findings: [],
 });
 
