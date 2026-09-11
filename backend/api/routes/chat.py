@@ -11,6 +11,7 @@ from backend.tools.registry import tool_registry
 from backend.security.scope import scope_validator, ScopeDecision
 from backend.services.store import store
 from backend.utils.target_normalizer import target_normalizer
+from backend.graph.nodes import research_node, vulnerability_node, critic_node, risk_node, report_node
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -292,6 +293,9 @@ async def chat_endpoint(request: ChatRequestSchema):
         yield send_sse({'event': 'plan_step_updated', 'step_id': 'step-2', 'status': 'completed', 'detail': f'Recon completed ({banner})'})
 
         real_findings: List[Dict[str, Any]] = []
+        pipeline_final = None
+        pipeline_report = None
+        pipeline_risk = 0.0
 
         # Execute Step 3: Containerized Service Scanning if requested
         if requires_scan:
@@ -314,7 +318,7 @@ async def chat_endpoint(request: ChatRequestSchema):
             yield send_sse({'event': 'tool_started', 'tool_id': 'tool-scan-1', 'agent': 'scanning', 'tool': 'service_discovery', 'profile': 'service_detection', 'target': user_target, 'input': {'target': resolved_ip, 'ports': '80,443,8080,22'}, 'timestamp': scan_start_time.strftime('%H:%M:%S')})
 
             # Real Nmap tool execution via WorkerManager / ToolRegistry
-            scan_res = tool_registry.execute_tool("service_discovery", {"target": resolved_ip, "ports": "80,443,8080,22"})
+            scan_res = tool_registry.execute_tool("nmap", {"target": resolved_ip, "options": {"ports": "80,443,8080,22"}}, profile="service_detection")
             scan_dur = f"{(datetime.datetime.now() - scan_start_time).total_seconds():.2f}s"
 
             yield send_sse({
@@ -333,7 +337,8 @@ async def chat_endpoint(request: ChatRequestSchema):
                 'status': scan_res.get('status', 'success')
             })
 
-            open_ports = scan_res.get('output', {}).get('open_ports', [])
+            _hosts = (scan_res.get('output') or {}).get('hosts', [])
+            open_ports = [p.get('port') for h in _hosts for p in h.get('ports', []) if p.get('state') == 'open']
             yield send_sse({'event': 'agent_step', 'step': {'id': 'st-scan-1', 'agentName': 'Scanning Agent', 'agentType': 'scanning', 'status': 'completed', 'duration': scan_dur, 'summary': f'Nmap process finished. Open ports: {open_ports}'}})
             yield send_sse({'event': 'plan_step_updated', 'step_id': 'step-3', 'status': 'completed', 'detail': f'Scan complete ({len(open_ports)} open ports)'})
 
@@ -341,44 +346,51 @@ async def chat_endpoint(request: ChatRequestSchema):
             yield send_sse({'event': 'plan_step_updated', 'step_id': 'step-4', 'status': 'running', 'detail': 'Validating findings against real scanner evidence'})
             yield send_sse({'event': 'message_delta', 'delta': '### Step 3: Evidence Analysis & Validation\n*Parsing raw container output and correlating evidence...*\n\n'})
 
-            # Parse real tool findings based strictly on actual scanner results
-            if open_ports:
-                for port_num in open_ports:
-                    fnd_id = f"fnd-{port_num}-{int(datetime.datetime.now().timestamp())}"
-                    fnd = {
-                        "id": fnd_id,
-                        "title": f"Exposed Service on TCP Port {port_num}",
-                        "severity": "medium" if port_num in [80, 443] else "high",
-                        "confidence": 95,
-                        "asset": f"{user_target}:{port_num}",
-                        "targetIp": f"{resolved_ip}:{port_num}",
-                        "status": "active",
-                        "category": "Service Exposure",
-                        "evidence": [
-                            f"Nmap scanner verified TCP port {port_num} state as OPEN on target {resolved_ip}.",
-                            f"Execution duration: {scan_dur}, process exit code: {scan_res.get('exit_code', 0)}"
-                        ],
-                        "impact": f"Service on port {port_num} is reachable over network. Verify service permissions.",
-                        "remediation": f"Ensure service running on port {port_num} is patched and secured.",
-                        "cveId": None,
-                        "firstDetected": datetime.datetime.utcnow().isoformat() + "Z"
-                    }
-                    real_findings.append(fnd)
-                    yield send_sse({'event': 'finding_created', 'agent': 'vulnerability', 'finding': fnd})
+            # Real pipeline: NVD CVE mapping -> LLM critic -> CVSS risk -> report
+            pstate = {
+                "conversation_id": conv_id, "assessment_id": asm_id,
+                "user_request": request.message, "target": active_target,
+                "authorization": "confirmed", "scope": active_target, "status": "in_progress",
+                "current_plan": None, "current_agent": "",
+                "messages": [], "tool_results": [scan_res], "evidence": [],
+                "retrieved_documents": [], "findings": [], "risk_score": 0.0,
+                "approvals": [], "errors": [], "final_response": "", "report": None,
+                "execution_history": [],
+            }
 
+            yield send_sse({'event': 'message_delta', 'delta': '*Correlating service versions against NVD...*\n\n'})
+            pstate = research_node(pstate)
+            pstate = vulnerability_node(pstate)
+            real_findings = pstate["findings"]
+            for fnd in real_findings:
+                yield send_sse({'event': 'finding_created', 'agent': 'vulnerability', 'finding': fnd})
+
+            pstate = critic_node(pstate)
+            active_findings = [f for f in pstate["findings"] if f.get("status") != "rejected"]
+            avg_conf = round(sum(f["confidence"] for f in active_findings) / len(active_findings) / 100, 2) if active_findings else 0.0
+            crit_mode = pstate["execution_history"][-1]["summary"] if pstate["execution_history"] else ""
             yield send_sse({
                 "event": "critic_result",
                 "agent": "critic",
-                "status": "VALIDATED",
-                "confidence": 0.95,
-                "summary": f"Evidence verified for {len(open_ports)} detected services.",
+                "status": "VALIDATED" if active_findings else "NO_FINDINGS",
+                "confidence": avg_conf,
+                "summary": crit_mode,
                 "decision": "Generate Final Report"
             })
-            yield send_sse({'event': 'agent_step', 'step': {'id': 'st-crit-1', 'agentName': 'Critic Agent', 'agentType': 'critic', 'status': 'completed', 'duration': '0.2s', 'summary': f'Evidence verified ({len(real_findings)} findings validated)'}})
-            yield send_sse({'event': 'plan_step_updated', 'step_id': 'step-4', 'status': 'completed', 'detail': 'Analysis complete'})
+            yield send_sse({'event': 'agent_step', 'step': {'id': 'st-crit-1', 'agentName': 'Critic Agent', 'agentType': 'critic', 'status': 'completed', 'duration': '1.2s', 'summary': crit_mode}})
+
+            pstate = risk_node(pstate)
+            pstate = report_node(pstate)
+            pipeline_final = pstate["final_response"]
+            pipeline_report = pstate["report"]
+            pipeline_risk = pstate["risk_score"]
+            yield send_sse({'event': 'agent_step', 'step': {'id': 'st-risk-1', 'agentName': 'Risk Agent', 'agentType': 'risk', 'status': 'completed', 'duration': '0.1s', 'summary': f'Composite risk {pipeline_risk}/10'}})
+            yield send_sse({'event': 'plan_step_updated', 'step_id': 'step-4', 'status': 'completed', 'detail': f'{len(real_findings)} CVE finding(s), risk {pipeline_risk}/10'})
 
         # Final Response Summary
-        if real_findings:
+        if pipeline_final:
+            final_content = pipeline_final
+        elif real_findings:
             findings_summary = "\n".join([f"• **Port {f['asset'].split(':')[-1]}**: {f['title']} (*{f['severity'].capitalize()}*)" for f in real_findings])
             final_content = (
                 f"### Assessment Completed\n\n"
@@ -422,6 +434,8 @@ async def chat_endpoint(request: ChatRequestSchema):
                 ]
             },
             "findings": real_findings,
+            "report": pipeline_report,
+            "riskScore": pipeline_risk,
             "references": []
         }
         yield send_sse(complete_payload)

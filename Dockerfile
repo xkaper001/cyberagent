@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
     curl \
+    nmap \
+    dnsutils \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install
@@ -15,6 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY backend/ ./backend/
+COPY security-worker/ ./security-worker/
 COPY .env.example .env
 
 EXPOSE 8000

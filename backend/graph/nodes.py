@@ -13,7 +13,7 @@ from backend.schemas.cyber import FindingSchema, KnowledgeItemSchema, ReportSche
 def discovered_services(state):
     services = []
     for job in state.get("tool_results", []):
-        if job.get("tool_name") != "nmap":
+        if job.get("tool_name") not in ("nmap", "service_discovery"):
             continue
         parsed = job.get("output") or {}
         for host in parsed.get("hosts", []):
