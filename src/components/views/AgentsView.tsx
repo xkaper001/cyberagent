@@ -1,39 +1,43 @@
 import React from 'react';
-import { PIPELINE } from '../../lib/agents';
+import { TOOLBOX } from '../../lib/agents';
+
+const KIND_LABEL: Record<string, string> = {
+  recon: 'RECON', scan: 'SCAN', intel: 'INTEL', advisory: 'ADVISORY', control: 'CONTROL',
+};
 
 export const AgentsView: React.FC = () => (
   <div className="h-full overflow-y-auto">
     <div className="px-10 py-8 border-b border-ink-200">
-      <h1 className="text-2xl font-semibold">Agent Pipeline</h1>
-      <p className="text-ink-500 mt-2 max-w-2xl">
-        Nine specialized agents run in sequence on every assessment. Each hands its state to the next —
-        recon and scanning gather real tool output, research and vulnerability map it to NVD, and the
-        critic, risk, and report agents turn it into a verified result. There is no manual per-agent
-        trigger; running an assessment in the Console executes the whole chain.
+      <h1 className="text-2xl font-semibold">Autonomous Agent</h1>
+      <p className="text-ink-500 mt-2 max-w-2xl leading-relaxed">
+        A single LLM-driven agent runs each assessment. It is given the toolbox below and decides
+        entirely on its own which tools to call and in what order — reasoning between each step,
+        adapting to what it finds, and recording findings when the evidence supports them. There is
+        no fixed pipeline and no manual per-tool trigger. Watch its live decisions and tool calls in
+        the Console trace.
       </p>
+      <div className="mt-5 flex flex-wrap gap-3">
+        <span className="font-mono text-xs border border-ink-300 px-3 py-1">Authorized targets only</span>
+        <span className="font-mono text-xs border border-ink-300 px-3 py-1">No real exploitation</span>
+        <span className="font-mono text-xs border border-ink-300 px-3 py-1">Scope enforced per tool call</span>
+      </div>
     </div>
 
-    <ol className="px-10 py-8 max-w-4xl">
-      {PIPELINE.map((a, i) => (
-        <li key={a.type} className="relative pl-12 pb-8 last:pb-0">
-          {i < PIPELINE.length - 1 && <span className="absolute left-[15px] top-9 bottom-0 w-px bg-ink-200" />}
-          <div className="absolute left-0 top-0 w-8 h-8 border border-ink-950 flex items-center justify-center font-mono text-xs font-semibold">
-            {a.order}
+    <div className="px-10 py-8">
+      <h2 className="font-mono text-xs tracking-[0.15em] text-ink-500 mb-5">TOOLBOX</h2>
+      <div className="grid grid-cols-2 gap-px bg-ink-200 border border-ink-200">
+        {TOOLBOX.map((t) => (
+          <div key={t.name} className="bg-white p-6">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="font-mono text-sm font-semibold">{t.name}</span>
+              <span className="font-mono text-[10px] tracking-wider text-ink-500 border border-ink-300 px-2 py-0.5">
+                {KIND_LABEL[t.kind]}
+              </span>
+            </div>
+            <p className="text-sm text-ink-600 mt-2">{t.role}</p>
           </div>
-          <div className="flex items-baseline justify-between gap-4">
-            <h2 className="text-base font-semibold">{a.name} Agent</h2>
-            <span className="font-mono text-[10px] tracking-wider text-ink-500 border border-ink-300 px-2 py-0.5">
-              {a.live ? 'LIVE' : 'STUB'}
-            </span>
-          </div>
-          <p className="text-sm text-ink-600 mt-1">{a.role}</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {a.tools.map((t) => (
-              <span key={t} className="font-mono text-xs text-ink-500 bg-ink-100 px-2 py-0.5">{t}</span>
-            ))}
-          </div>
-        </li>
-      ))}
-    </ol>
+        ))}
+      </div>
+    </div>
   </div>
 );

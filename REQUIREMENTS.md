@@ -121,12 +121,19 @@ Dependency-ordered. Each phase produces something demoable. Phases 0–4 = Revie
 - [x] Added `cvssScore` to `FindingSchema` so risk uses real numbers.
 - **Demo**: verified — target A (Apache 9.8) → 9.8/Critical, target B (low) → 2.1/Low; live LLM critic returned 85% w/ reasoning. `backend/tests/test_phase3.py` (LLM-free) + live smoke.
 
-### Phase 4 — Autonomy + exploit advisor + salvage (1 day)
-- [ ] Supervisor/planner loop runs end-to-end unattended after authorization
-- [ ] Exploit **advisor** node: suggests commands, never executes (guardrail in §7)
-- [ ] Fold in old project's `normalize_target` + tool detect/install
-- [ ] Auth gate verified: no active tool runs pre-confirmation; audit log present
-- **Demo (Review 1 bar)**: plain-English target → autonomous run → live report.
+### Phase 4 — Autonomy + exploit advisor + salvage (1 day)  ✅ DONE
+- [x] **Real autonomous agent** (`backend/agents/autonomous.py`): LLM tool-calling loop
+  (`.bind_tools`), no fixed pipeline — the model chooses which tools to call and in what
+  order, reasoning between steps, up to MAX_STEPS, until it calls `finish`.
+- [x] Toolbox: dns_lookup, http_headers, port_scan (nmap -sV), cve_search (NVD/CPE),
+  record_finding, finish, and **exploit_advisor — advice only, never executes** (§7 guardrail).
+- [x] Every decision + tool call + result streams to the Console trace (SSE).
+- [x] Auth gate verified: no tool runs pre-confirmation; out-of-scope blocked at the worker
+  even when the user claims authorization; each tool call re-checks scope.
+- [~] `normalize_target` already present as `target_normalizer` (salvaged earlier); tool
+  detect/install deferred (not needed for Review 1).
+- **Demo (Review 1 bar)**: `scan scanme.nmap.org, I am authorized` → agent autonomously ran
+  dns → http → nmap → cve_search → exploit_advisor → recorded 8 findings → risk 8.2/High.
 
 ### Phase 5 — Hosted sandbox deploy (Review 2)
 - [ ] Pick provider (Fly / Render / E2B / self-host) — §7 open question
