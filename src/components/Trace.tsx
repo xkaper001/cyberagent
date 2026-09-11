@@ -20,9 +20,7 @@ export const Trace: React.FC<{ entries: TraceEntry[]; running: boolean }> = ({ e
   useEffect(() => {
     const el = scroller.current;
     if (!el) return;
-    // only autoscroll if the user is already near the bottom
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-    if (nearBottom) el.scrollTop = el.scrollHeight;
+    requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
   }, [entries]);
 
   return (
