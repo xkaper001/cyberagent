@@ -12,7 +12,7 @@ export const ConsoleView: React.FC<{
 }> = ({ state, onRun, onConfirm, onReset }) => {
   const running = state.status === 'running';
   return (
-    <div className="flex flex-col h-full min-w-0">
+    <div className="flex flex-col h-full min-h-0 min-w-0 overflow-hidden">
       <TargetBar status={state.status as RunStatus} onRun={onRun} onReset={onReset} />
 
       {state.status === 'awaiting-auth' && (
@@ -35,7 +35,7 @@ export const ConsoleView: React.FC<{
         </div>
       )}
 
-      <div className="flex-1 grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] min-h-0">
+      <div className="flex-1 grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] min-h-0 overflow-hidden">
         <Trace entries={state.trace} running={running} />
         <Results state={state} />
       </div>

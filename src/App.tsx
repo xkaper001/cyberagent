@@ -41,9 +41,9 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full bg-white text-ink-950">
+    <div className="flex h-screen w-screen overflow-hidden bg-white text-ink-950">
       <Sidebar view={view} onChange={goTo} runCount={runs.length} />
-      <main className="flex-1 min-w-0">{body()}</main>
+      <main className="flex-1 min-w-0 min-h-0 overflow-hidden">{body()}</main>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AssessmentState, Finding } from '../lib/useAssessment';
+import { Md } from './Md';
 
 const pct = (v?: number | null) => Math.max(0, Math.min(100, ((v ?? 0) / 10) * 100));
 
@@ -50,7 +51,7 @@ export const Results: React.FC<{ state: AssessmentState }> = ({ state }) => {
   const active = findings.filter((f) => f.status !== 'rejected');
 
   return (
-    <section className="flex flex-col h-full min-w-0 overflow-y-auto">
+    <section className="flex flex-col h-full min-h-0 min-w-0 overflow-y-auto">
       {/* Risk header */}
       <div className="px-8 py-6 border-b border-ink-300">
         <div className="flex items-end justify-between gap-4">
@@ -93,7 +94,7 @@ export const Results: React.FC<{ state: AssessmentState }> = ({ state }) => {
           </button>
           {showReport && (
             <div className="px-8 pb-8 space-y-5 text-sm">
-              {report.executiveSummary && <p className="leading-relaxed">{report.executiveSummary}</p>}
+              {report.executiveSummary && <Md text={report.executiveSummary} />}
               {report.attackSurface && (
                 <div>
                   <div className="font-mono text-xs tracking-wider text-ink-400 mb-1">ATTACK SURFACE</div>
@@ -116,7 +117,7 @@ export const Results: React.FC<{ state: AssessmentState }> = ({ state }) => {
       )}
 
       {!report && finalText && status === 'done' && (
-        <div className="px-8 py-6 text-sm whitespace-pre-wrap text-ink-700">{finalText}</div>
+        <div className="px-8 py-6"><Md text={finalText} /></div>
       )}
     </section>
   );
