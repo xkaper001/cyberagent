@@ -35,6 +35,7 @@ def test_workspace_file_operations():
     assert len(files) >= 1
     assert files[0]["name"] == "test_evidence.txt"
 
+@pytest.mark.needs_worker
 def test_workspace_command_execution():
     asm_id = "test_asm_exec_103"
     ws = workspace_manager.get_or_create_workspace(asm_id)
