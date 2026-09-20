@@ -16,8 +16,8 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: pip install -r requirements.txt
-      # live_llm tests need a reachable LLM endpoint and Docker workers.
-      - run: pytest backend/tests -q -m "not live_llm"
+      # Deselected tests need a live LLM endpoint or a real nmap Docker worker.
+      - run: pytest backend/tests -q -m "not live_llm and not needs_worker"
 
   frontend:
     runs-on: ubuntu-latest

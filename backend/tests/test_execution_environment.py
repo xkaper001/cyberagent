@@ -39,6 +39,7 @@ def test_blocked_out_of_scope_execution():
     assert job.status == ExecutionStatus.BLOCKED
     assert job.error["code"] == "TARGET_OUT_OF_SCOPE"
 
+@pytest.mark.needs_worker
 def test_sanitized_nmap_execution():
     res = tool_registry.execute_tool(
         tool_name="nmap",

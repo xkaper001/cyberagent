@@ -57,6 +57,7 @@ def test_recon_agent_execution():
     assert len(res["evidence"]) >= 3
     assert any("Apache" in ev for ev in res["evidence"])
 
+@pytest.mark.needs_worker
 def test_scanning_agent_execution():
     state = get_base_state()
     res = scanning_agent.execute(state)
