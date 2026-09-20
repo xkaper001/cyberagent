@@ -11,6 +11,8 @@ export interface TraceEntry {
   sub?: string;
   status: 'running' | 'done' | 'blocked';
   meta?: string;
+  input?: string;
+  output?: string;
 }
 
 export interface Finding {
@@ -116,12 +118,13 @@ export function useAssessment() {
               break;
             }
             case 'tool_started':
-              setState((s) => ({ ...s, trace: upsert(s.trace, { key: e.tool_id, kind: 'tool', label: e.tool, sub: e.target, status: 'running' }) }));
+              setState((s) => ({ ...s, trace: upsert(s.trace, { key: e.tool_id, kind: 'tool', label: e.tool, sub: e.target, status: 'running', input: e.input }) }));
               break;
             case 'tool_completed':
               setState((s) => ({ ...s, trace: upsert(s.trace, {
                 key: e.tool_id, kind: 'tool', label: e.tool, sub: e.target,
                 status: e.status === 'blocked' ? 'blocked' : 'done', meta: e.duration,
+                input: e.input, output: e.output,
               }) }));
               break;
             case 'finding_created':

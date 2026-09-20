@@ -2,6 +2,7 @@ import React from 'react';
 import { AssessmentState, RunStatus } from '../../lib/useAssessment';
 import { TargetBar } from '../TargetBar';
 import { Trace } from '../Trace';
+import { RunLoader } from '../RunLoader';
 import { Results } from '../Results';
 
 export const ConsoleView: React.FC<{
@@ -14,6 +15,8 @@ export const ConsoleView: React.FC<{
   return (
     <div className="flex flex-col h-full min-h-0 min-w-0 overflow-hidden">
       <TargetBar status={state.status as RunStatus} onRun={onRun} onReset={onReset} />
+
+      {running && <RunLoader entries={state.trace} />}
 
       {state.status === 'awaiting-auth' && (
         <div className="border-b border-ink-950 bg-ink-950 text-white px-8 py-4 flex items-center justify-between gap-6">

@@ -26,10 +26,12 @@ export default {
       keyframes: {
         breathe: { '0%,100%': { opacity: '1' }, '50%': { opacity: '0.3' } },
         slideUp: { '0%': { opacity: '0', transform: 'translateY(4px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+        sweep: { '0%': { transform: 'translateX(-100%)' }, '100%': { transform: 'translateX(400%)' } },
       },
       animation: {
         breathe: 'breathe 1.3s ease-in-out infinite',
         slideUp: 'slideUp 0.18s ease-out',
+        sweep: 'sweep 1.4s ease-in-out infinite',
       },
     },
   },

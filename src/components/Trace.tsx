@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { TraceEntry } from '../lib/useAssessment';
 import { Md } from './Md';
 
@@ -13,6 +13,44 @@ const Tag: React.FC<{ label: string; solid?: boolean }> = ({ label, solid }) => 
     {label}
   </span>
 );
+
+const Io: React.FC<{ label: string; body: string }> = ({ label, body }) => (
+  <div className="mt-2">
+    <div className="font-mono text-[10px] tracking-[0.12em] text-ink-400">{label}</div>
+    <pre className="font-mono text-xs text-ink-600 mt-1 whitespace-pre-wrap break-words bg-ink-50 border border-ink-200 px-2 py-1 max-h-64 overflow-y-auto">{body}</pre>
+  </div>
+);
+
+const ToolEntry: React.FC<{ entry: TraceEntry }> = ({ entry: e }) => {
+  const [open, setOpen] = useState(false);
+  const expandable = Boolean(e.input || e.output);
+  return (
+    <div>
+      <button
+        type="button"
+        disabled={!expandable}
+        onClick={() => setOpen((v) => !v)}
+        className={`w-full text-left ${expandable ? 'cursor-pointer' : 'cursor-default'}`}
+        aria-expanded={open}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Tag label="TOOL CALL" solid />
+            <span className="font-mono text-sm font-medium truncate">{e.label}</span>
+            {e.status === 'blocked' && <span className="font-mono text-[10px] tracking-wider text-ink-500 border border-ink-300 px-1.5 py-0.5">BLOCKED</span>}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {e.meta && <span className="font-mono text-xs text-ink-400">{e.meta}</span>}
+            {expandable && <span className="font-mono text-[10px] text-ink-400">{open ? 'HIDE I/O' : 'SHOW I/O'}</span>}
+          </div>
+        </div>
+        {e.sub && <div className="font-mono text-xs text-ink-500 mt-1.5 break-words bg-ink-50 border border-ink-200 px-2 py-1">{e.sub}</div>}
+      </button>
+      {open && e.input && <Io label="INPUT" body={e.input} />}
+      {open && e.output && <Io label="OUTPUT" body={e.output} />}
+    </div>
+  );
+};
 
 export const Trace: React.FC<{ entries: TraceEntry[]; running: boolean }> = ({ entries, running }) => {
   const scroller = useRef<HTMLDivElement>(null);
@@ -45,17 +83,7 @@ export const Trace: React.FC<{ entries: TraceEntry[]; running: boolean }> = ({ e
                   {e.sub && <div className="text-sm text-ink-500 mt-0.5">{e.sub}</div>}
                 </div>
               ) : e.kind === 'tool' ? (
-                <div>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Tag label="TOOL CALL" solid />
-                      <span className="font-mono text-sm font-medium truncate">{e.label}</span>
-                      {e.status === 'blocked' && <span className="font-mono text-[10px] tracking-wider text-ink-500 border border-ink-300 px-1.5 py-0.5">BLOCKED</span>}
-                    </div>
-                    {e.meta && <span className="font-mono text-xs text-ink-400 shrink-0">{e.meta}</span>}
-                  </div>
-                  {e.sub && <div className="font-mono text-xs text-ink-500 mt-1.5 break-words bg-ink-50 border border-ink-200 px-2 py-1">{e.sub}</div>}
-                </div>
+                <ToolEntry entry={e} />
               ) : (
                 <div>
                   <div className="flex items-center justify-between gap-3">
