@@ -120,6 +120,7 @@ class WorkerManager:
         # Parse worker output JSON wrapper
         try:
             out_json = json.loads(stdout_raw.strip())
+            job.command = out_json.get("command")
             job.exit_code = out_json.get("exit_code", exit_code)
             job.stdout = out_json.get("stdout", stdout_raw)
             job.stderr = out_json.get("stderr", stderr_raw)
@@ -139,6 +140,13 @@ class WorkerManager:
             if exit_code != 0:
                 job.error = {"code": "PROCESS_ERROR", "message": stderr_raw or f"Exited with code {exit_code}"}
 
+        log_security_event(
+            agent, tool,
+            f"Execution {job.status.value} (cmd: {job.command or 'n/a'})",
+            target,
+            result_status=job.status.value.upper(),
+            duration=f"{job.duration_seconds}s",
+        )
         return job
 
 worker_manager = WorkerManager()

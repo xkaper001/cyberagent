@@ -30,7 +30,7 @@ class ToolRegistry:
                     category="scanning",
                     enabled=True,
                     requires_scope=True,
-                    allowed_profiles=["host_discovery", "service_detection", "approved_assessment"],
+                    allowed_profiles=["agent_directed", "host_discovery", "service_detection", "approved_assessment", "top_ports", "quick_tcp_scan"],
                     timeout_seconds=300,
                     risk_level="medium",
                     requires_approval=False
@@ -250,13 +250,33 @@ class ToolRegistry:
         else:
             effective_target = normalized["hostname"]
 
+        options = dict(input_data.get("options") or {})
+
+        # Agent-chosen nmap flags are validated here — below the agent, above the
+        # worker — so a model cannot reason its way past the restriction.
+        if tool_name == "nmap" and selected_profile == "agent_directed":
+            from backend.execution.policy import execution_policy
+            ok, err, argv = execution_policy.validate_nmap_args(options.get("args", ""))
+            if not ok:
+                log_security_event(metadata.agent, tool_name, f"BLOCKED (Argument Policy): {err}", effective_target)
+                return {
+                    "tool_name": metadata.name,
+                    "agent": metadata.agent,
+                    "profile": selected_profile,
+                    "target": effective_target,
+                    "status": "blocked",
+                    "output": None,
+                    "error": {"code": "ARGUMENT_POLICY_VIOLATION", "message": err, "retryable": False},
+                }
+            options["args"] = argv
+
         # Dispatch execution job via WorkerManager
         job: ExecutionJob = worker_manager.execute_job(
             agent=metadata.agent,
             tool=tool_name,
             profile=selected_profile,
             target=effective_target,
-            options=input_data.get("options", {})
+            options=options
         )
 
         output_dict = {
@@ -264,6 +284,7 @@ class ToolRegistry:
             "tool_name": metadata.name,
             "agent": metadata.agent,
             "profile": job.profile,
+            "command": job.command,
             "target": job.target,
             "status": job.status.value,
             "exit_code": job.exit_code,

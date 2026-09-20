@@ -47,9 +47,14 @@ def main():
     template = profile["command_template"]
     ports = options.get("ports") or profile.get("default_ports", "80,443,8080,22,5432")
 
-    # Construct safe command from template
+    # Construct safe command from template. {args} expands to the agent-chosen,
+    # backend-validated flag list; every other slot is a literal substitution.
+    agent_args = options.get("args") or []
     cmd = []
     for arg in template:
+        if arg == "{args}":
+            cmd.extend(str(a) for a in agent_args)
+            continue
         cmd.append(arg.replace("{target}", target).replace("{ports}", ports))
 
     start_time = time.time()
@@ -68,6 +73,7 @@ def main():
     except subprocess.TimeoutExpired:
         duration = round(time.time() - start_time, 2)
         print(json.dumps({
+            "command": " ".join(cmd),
             "exit_code": -1,
             "duration": duration,
             "stdout": "",
@@ -79,6 +85,7 @@ def main():
     except FileNotFoundError:
         duration = round(time.time() - start_time, 2)
         print(json.dumps({
+            "command": " ".join(cmd),
             "exit_code": -1,
             "duration": duration,
             "stdout": "",
@@ -90,6 +97,7 @@ def main():
     except Exception as e:
         duration = round(time.time() - start_time, 2)
         print(json.dumps({
+            "command": " ".join(cmd),
             "exit_code": -1,
             "duration": duration,
             "stdout": "",
@@ -112,6 +120,7 @@ def main():
         parsed_result = {"raw": stdout}
 
     output_payload = {
+        "command": " ".join(cmd),
         "exit_code": exit_code,
         "duration": duration,
         "stdout": stdout,

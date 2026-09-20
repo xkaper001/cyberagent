@@ -21,6 +21,7 @@ class ExecutionJob(BaseModel):
     profile: str
     target: str
     status: ExecutionStatus = ExecutionStatus.QUEUED
+    command: Optional[str] = None  # literal argv executed in the sandbox, for audit/trace
     requested_at: str = Field(default_factory=lambda: datetime.datetime.utcnow().isoformat() + "Z")
     started_at: Optional[str] = None
     finished_at: Optional[str] = None

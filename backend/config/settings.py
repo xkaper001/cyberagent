@@ -1,4 +1,23 @@
 import os
+from pathlib import Path
+
+
+def _load_dotenv() -> None:
+    """Populate os.environ from repo-root .env (real env vars win)."""
+    env_path = Path(__file__).resolve().parents[2] / ".env"
+    if not env_path.is_file():
+        return
+    for line in env_path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, val = line.partition("=")
+        key, val = key.strip(), val.strip().strip('"').strip("'")
+        os.environ.setdefault(key, val)
+
+
+_load_dotenv()
+
 
 class Settings:
     APP_ENV: str = os.getenv("APP_ENV", "development")

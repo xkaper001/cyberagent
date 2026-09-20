@@ -1,7 +1,28 @@
+import re
 import shlex
 from typing import Dict, Any, List, Optional, Tuple
 from backend.security.scope import scope_validator, TargetValidationError
 from backend.tools.package_catalog import package_catalog
+
+# Flags the agent may never pass to nmap. Each one either sources targets from
+# somewhere other than the authorized scope, writes to the filesystem, or runs
+# code against the target.
+BLOCKED_NMAP_FLAGS = {
+    "-iL", "-iR", "--excludefile",           # targets from outside the authorized scope
+    "-oN", "-oX", "-oG", "-oA", "-oS",       # output redirection; we own stdout parsing
+    "--resume", "--stylesheet", "--webxml",
+    "--datadir", "--servicedb", "--versiondb",
+    "--interactive",
+}
+# ponytail: NSE blocked wholesale. Safe categories (safe, default, discovery) could
+# be allowlisted later; blocking the flag is one line and keeps the no-exploitation
+# guarantee trivially auditable.
+BLOCKED_NMAP_PREFIXES = ("--script",)
+
+# A bare token that looks like a host, domain or CIDR is a second target.
+_TARGETISH = re.compile(
+    r"^(\d{1,3}(\.\d{1,3}){3}(/\d{1,2})?|[A-Za-z0-9_-]+(\.[A-Za-z]{2,})+)$"
+)
 
 # Base allowed CLI binaries when running outside container isolation
 HOST_FALLBACK_BINARIES = {
@@ -73,6 +94,40 @@ class ExecutionPolicy:
         if not is_linux:
             if first_tok not in HOST_FALLBACK_BINARIES and not first_tok.endswith(".py") and not first_tok.startswith("./"):
                 return False, f"Command binary '{first_tok}' is not permitted in Development Host Shell. Allowed binaries include: {', '.join(sorted(list(HOST_FALLBACK_BINARIES))[:12])}...", tokens
+
+        return True, None, tokens
+
+    def validate_nmap_args(self, raw_args: str) -> Tuple[bool, Optional[str], List[str]]:
+        """
+        Validates agent-chosen nmap flags. The agent picks how to scan; this decides
+        what it may never do. Returns (is_valid, error_reason, argv_tokens).
+
+        The authorized target is appended by the worker from the validated scope —
+        it is never taken from these arguments.
+        """
+        if not raw_args or not raw_args.strip():
+            return True, None, []
+
+        try:
+            tokens = shlex.split(raw_args.strip())
+        except ValueError as exc:
+            return False, f"Unparseable nmap arguments: {exc}", []
+
+        for tok in tokens:
+            flag = tok.split("=", 1)[0]
+
+            if flag in BLOCKED_NMAP_FLAGS or flag.startswith(BLOCKED_NMAP_PREFIXES):
+                return False, (
+                    f"Flag '{flag}' is not permitted. Output redirection, target-list "
+                    f"input, random-host scanning and NSE scripts are blocked — the "
+                    f"agent may choose scan technique, timing and ports only."
+                ), tokens
+
+            if not tok.startswith("-") and _TARGETISH.match(tok):
+                return False, (
+                    f"'{tok}' looks like a scan target. The target comes from the "
+                    f"authorized assessment scope, not from the argument string."
+                ), tokens
 
         return True, None, tokens
 

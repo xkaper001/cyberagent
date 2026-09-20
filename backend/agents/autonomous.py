@@ -7,7 +7,7 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage, AI
 
 from backend.llm.factory import get_llm
 from backend.tools.registry import tool_registry
-from backend.services.cve_lookup import lookup as cve_lookup
+from backend.services.cve_lookup import lookup as cve_lookup, NvdUnavailable
 from backend.graph.nodes import _finding_score, _risk_level
 
 MAX_STEPS = 16
@@ -17,7 +17,7 @@ The target has ALREADY been authorized by the operator and validated in scope.
 
 You decide, on your own, which tools to run and in what order — there is no fixed
 pipeline. Typical flow: resolve DNS, inspect HTTP headers, run a service/version
-port scan, then map discovered service versions to CVEs. But adapt to what you find.
+nmap scan, then map discovered service versions to CVEs. But adapt to what you find.
 
 Rules:
 - Only assess the given target.
@@ -46,9 +46,30 @@ def build_agent(target: str):
         return json.dumps({"server": out.get("server"), "status": out.get("status_line"), "error": r.get("error")})
 
     @tool
-    def port_scan(host: str, ports: str = "80,443,8080,22") -> str:
-        """Run an authorized nmap -sV service and version scan. Returns open ports with product/version/CPE."""
-        r = tool_registry.execute_tool("nmap", {"target": host, "options": {"ports": ports}}, profile="service_detection")
+    def nmap(host: str, flags: str = "-sV -p 80,443,8080,22") -> str:
+        """Run nmap against the authorized target. You choose the flags.
+
+        Pass `flags` exactly as you would type them after `nmap`, without the target
+        and without an output flag. Examples:
+          "-sn"                        host discovery / ping sweep
+          "-sV -p 80,443,8080,22"      service + version detection on chosen ports
+          "-sV -p-  -T4"               all 65535 ports, faster timing
+          "-sT --top-ports 100 --open" connect scan, common ports, open only
+          "-sV --version-intensity 9"  aggressive version probing
+          "-O"                         OS fingerprinting
+        Choose timing (-T0..-T5), technique (-sS/-sT/-sU/-sn), ports (-p) and
+        version intensity to suit what you have already learned about the target.
+
+        Blocked by policy: -iL/-iR (targets from elsewhere), -oN/-oX/-oG/-oA
+        (output redirection), and --script (NSE) — this system never runs exploit
+        code. A blocked call returns an error explaining which flag was refused;
+        retry with different flags.
+
+        Returns the executed command plus open ports with product/version/CPE.
+        """
+        r = tool_registry.execute_tool(
+            "nmap", {"target": host, "options": {"args": flags}}, profile="agent_directed"
+        )
         if r.get("error"):
             return json.dumps({"error": r["error"]})
         hosts = (r.get("output") or {}).get("hosts", [])
@@ -57,13 +78,18 @@ def build_agent(target: str):
              "version": p.get("version"), "cpes": p.get("cpes", [])}
             for h in hosts for p in h.get("ports", []) if p.get("state") == "open"
         ]
-        return json.dumps(svc or {"open_ports": []})
+        return json.dumps({"command": r.get("command"), "open_ports": svc})
 
     @tool
     def cve_search(product: str, version: str = "", cpe: str = "") -> str:
-        """Look up real CVEs from NVD for a discovered service. Prefer passing the exact CPE from port_scan."""
+        """Look up real CVEs from NVD for a discovered service. Prefer passing the exact CPE from nmap."""
         cpes = (cpe,) if cpe else ()
-        cves = cve_lookup(product, version or None, cpes)
+        try:
+            cves = cve_lookup(product, version or None, cpes)
+        except NvdUnavailable as e:
+            # Tell the agent the truth: no answer, not "no CVEs". Otherwise it
+            # keeps rephrasing the query against a rate-limited API.
+            return json.dumps({"error": f"CVE database unavailable: {e}. Do not retry this service."})
         return json.dumps([
             {"cveId": c["cveId"], "cvss": c.get("cvssScore"), "severity": c["severity"],
              "cwe": c.get("cweId"), "summary": c["summary"][:200]}
@@ -103,7 +129,7 @@ def build_agent(target: str):
         """Conclude the assessment with a short risk summary once findings are recorded."""
         return "done"
 
-    tools = [dns_lookup, http_headers, port_scan, cve_search, exploit_advisor, record_finding, finish]
+    tools = [dns_lookup, http_headers, nmap, cve_search, exploit_advisor, record_finding, finish]
     return tools, findings
 
 
@@ -166,14 +192,16 @@ def run_autonomous(target: str, target_ip: str) -> Iterator[Dict[str, Any]]:
             tid = f"tool-{tool_seq}"
             arg_str = ", ".join(f"{k}={v}" for k, v in args.items())
             yield {"event": "tool_started", "tool_id": tid, "agent": "autonomous",
-                   "tool": name, "target": arg_str[:80]}
+                   "tool": name, "target": arg_str[:80],
+                   "input": json.dumps(args, indent=2)}
 
             if name == "finish":
                 finished = True
                 finish_note = args.get("summary", "")
                 messages.append(ToolMessage(content="done", tool_call_id=tc_id))
                 yield {"event": "tool_completed", "tool_id": tid, "tool": name, "target": arg_str[:80],
-                       "status": "success", "output": {"summary": finish_note}}
+                       "status": "success", "input": json.dumps(args, indent=2),
+                       "output": json.dumps({"summary": finish_note}, indent=2)}
                 continue
 
             t0 = datetime.datetime.now()
@@ -187,7 +215,7 @@ def run_autonomous(target: str, target_ip: str) -> Iterator[Dict[str, Any]]:
             blocked = "TARGET_OUT_OF_SCOPE" in str(result) or "Scope Policy Violation" in str(result)
             yield {"event": "tool_completed", "tool_id": tid, "tool": name, "target": arg_str[:80],
                    "status": "blocked" if blocked else "success", "duration": dur,
-                   "output": _short(result)}
+                   "input": json.dumps(args, indent=2), "output": _pretty(result)}
 
             if name == "record_finding":
                 yield {"event": "finding_created", "agent": "autonomous", "finding": findings[-1]}
@@ -224,6 +252,11 @@ def run_autonomous(target: str, target_ip: str) -> Iterator[Dict[str, Any]]:
     }
 
 
-def _short(result: Any) -> Any:
+def _pretty(result: Any) -> str:
+    """Tool output as indented JSON when possible, truncated for transport."""
     s = str(result)
-    return s[:500] + "…" if len(s) > 500 else result
+    try:
+        s = json.dumps(json.loads(s), indent=2)
+    except Exception:
+        pass
+    return s[:4000] + "\n… (truncated)" if len(s) > 4000 else s
