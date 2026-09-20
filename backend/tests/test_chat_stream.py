@@ -5,6 +5,7 @@ from backend.main import app
 
 client = TestClient(app)
 
+@pytest.mark.live_llm
 def test_chat_stream_authorized_target():
     payload = {
         "message": "I want to perform scanning on https://target.lab",
@@ -40,6 +41,7 @@ def test_chat_stream_authorized_target():
     assert sup_event["target"] in ["target.lab", "https://target.lab"]
 
 
+@pytest.mark.live_llm
 def test_chat_stream_events_have_real_tool_outputs():
     payload = {
         "message": "Run security check on 127.0.0.1",

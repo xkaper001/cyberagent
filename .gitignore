@@ -28,3 +28,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.spec
+
+# Python virtualenv
+venv/
+.venv/

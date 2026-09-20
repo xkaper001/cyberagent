@@ -58,6 +58,7 @@ def test_workspace_package_allowlist():
     assert res_bad["status"] == "rejected"
     assert "allowlist" in res_bad["error"]
 
+@pytest.mark.live_llm
 def test_workspace_api_endpoints():
     asm_id = "test_asm_api_105"
 

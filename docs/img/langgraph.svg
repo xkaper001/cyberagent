@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1400" width="1400" height="1400" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#2E3A45"/>
+    </marker>
+    <marker id="arb" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1B5E9E"/>
+    </marker>
+    <marker id="arg" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#8A94A0"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1400" height="1400" fill="#FFFFFF"/>
+
+  <text x="70" y="72" font-size="34" font-weight="700" fill="#12171C">CyberAgents — LangGraph state graph</text>
+  <text x="70" y="106" font-size="17" fill="#5B6771">backend/graph/workflow.py · StateGraph(SecurityState) · 9 nodes · 1 conditional edge</text>
+  <line x1="70" y1="132" x2="1330" y2="132" stroke="#D3DAE0" stroke-width="1.5"/>
+
+  <!-- ================= node column ================= -->
+  <rect x="455" y="168" width="180" height="48" rx="24" fill="#EDF1F3" stroke="#8A94A0" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="545" y="199" font-size="17" font-weight="600" fill="#5B6771" text-anchor="middle">__start__</text>
+
+  <rect x="420" y="258" width="250" height="66" rx="9" fill="#F5F7F8" stroke="#2E3A45" stroke-width="2"/>
+  <text x="545" y="288" font-size="20" font-weight="600" fill="#12171C" text-anchor="middle">supervisor</text>
+  <text x="545" y="310" font-size="14" fill="#5B6771" text-anchor="middle">classify request · validate scope</text>
+
+  <rect x="420" y="368" width="250" height="66" rx="9" fill="#F5F7F8" stroke="#2E3A45" stroke-width="2"/>
+  <text x="545" y="398" font-size="20" font-weight="600" fill="#12171C" text-anchor="middle">planner</text>
+  <text x="545" y="420" font-size="14" fill="#5B6771" text-anchor="middle">decompose into plan steps</text>
+
+  <rect x="420" y="478" width="250" height="66" rx="9" fill="#F5F7F8" stroke="#2E3A45" stroke-width="2"/>
+  <text x="545" y="508" font-size="20" font-weight="600" fill="#12171C" text-anchor="middle">recon</text>
+  <text x="545" y="530" font-size="14" fill="#5B6771" text-anchor="middle">dig · curl -I  (sandbox)</text>
+
+  <rect x="420" y="588" width="250" height="66" rx="9" fill="#F5F7F8" stroke="#2E3A45" stroke-width="2"/>
+  <text x="545" y="618" font-size="20" font-weight="600" fill="#12171C" text-anchor="middle">scanning</text>
+  <text x="545" y="640" font-size="14" fill="#5B6771" text-anchor="middle">nmap -sV  (sandbox)</text>
+
+  <rect x="420" y="698" width="250" height="66" rx="9" fill="#F5F7F8" stroke="#2E3A45" stroke-width="2"/>
+  <text x="545" y="728" font-size="20" font-weight="600" fill="#12171C" text-anchor="middle">research</text>
+  <text x="545" y="750" font-size="14" fill="#5B6771" text-anchor="middle">NVD advisory retrieval</text>
+
+  <rect x="420" y="808" width="250" height="66" rx="9" fill="#F5F7F8" stroke="#2E3A45" stroke-width="2"/>
+  <text x="545" y="838" font-size="20" font-weight="600" fill="#12171C" text-anchor="middle">vulnerability</text>
+  <text x="545" y="860" font-size="14" fill="#5B6771" text-anchor="middle">service version → CVE findings</text>
+
+  <rect x="420" y="918" width="250" height="66" rx="9" fill="#E2ECF6" stroke="#1B5E9E" stroke-width="2.5"/>
+  <text x="545" y="948" font-size="20" font-weight="600" fill="#1B5E9E" text-anchor="middle">critic</text>
+  <text x="545" y="970" font-size="14" fill="#1B5E9E" text-anchor="middle">LLM false-positive check</text>
+
+  <rect x="420" y="1046" width="250" height="66" rx="9" fill="#F5F7F8" stroke="#2E3A45" stroke-width="2"/>
+  <text x="545" y="1076" font-size="20" font-weight="600" fill="#12171C" text-anchor="middle">risk</text>
+  <text x="545" y="1098" font-size="14" fill="#5B6771" text-anchor="middle">CVSS composite score</text>
+
+  <rect x="420" y="1156" width="250" height="66" rx="9" fill="#F5F7F8" stroke="#2E3A45" stroke-width="2"/>
+  <text x="545" y="1186" font-size="20" font-weight="600" fill="#12171C" text-anchor="middle">report</text>
+  <text x="545" y="1208" font-size="14" fill="#5B6771" text-anchor="middle">executive summary + roadmap</text>
+
+  <rect x="455" y="1266" width="180" height="48" rx="24" fill="#EDF1F3" stroke="#8A94A0" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="545" y="1297" font-size="17" font-weight="600" fill="#5B6771" text-anchor="middle">__end__</text>
+
+  <!-- ================= static edges ================= -->
+  <line x1="545" y1="216" x2="545" y2="252" stroke="#2E3A45" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="545" y1="324" x2="545" y2="362" stroke="#2E3A45" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="545" y1="434" x2="545" y2="472" stroke="#2E3A45" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="545" y1="544" x2="545" y2="582" stroke="#2E3A45" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="545" y1="654" x2="545" y2="692" stroke="#2E3A45" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="545" y1="764" x2="545" y2="802" stroke="#2E3A45" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="545" y1="874" x2="545" y2="912" stroke="#2E3A45" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="545" y1="1112" x2="545" y2="1150" stroke="#2E3A45" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="545" y1="1222" x2="545" y2="1260" stroke="#2E3A45" stroke-width="2" marker-end="url(#ar)"/>
+
+  <!-- conditional: critic -> risk -->
+  <line x1="545" y1="984" x2="545" y2="1040" stroke="#1B5E9E" stroke-width="2.5" marker-end="url(#arb)"/>
+  <circle cx="545" cy="984" r="6" fill="#1B5E9E"/>
+  <text x="566" y="1018" font-size="15" font-weight="600" fill="#1B5E9E">findings retained</text>
+
+  <!-- conditional: critic -> planner (re-plan) -->
+  <path d="M420 951 L250 951 L250 401 L414 401" fill="none" stroke="#8A94A0" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#arg)"/>
+  <text x="238" y="690" font-size="15" font-weight="600" fill="#8A94A0" text-anchor="end">no findings</text>
+  <text x="238" y="712" font-size="15" font-weight="600" fill="#8A94A0" text-anchor="end">and &lt; 2 evidence</text>
+  <text x="238" y="734" font-size="15" font-weight="600" fill="#8A94A0" text-anchor="end">items → re-plan</text>
+
+  <!-- ================= right panel: shared state ================= -->
+  <rect x="770" y="258" width="560" height="430" rx="9" fill="#F5F7F8" stroke="#D3DAE0" stroke-width="2"/>
+  <text x="800" y="296" font-size="17" font-weight="700" fill="#12171C">SecurityState — the shared blackboard</text>
+  <text x="800" y="320" font-size="14" fill="#5B6771">Every node receives it, mutates it, returns it.</text>
+
+  <text x="800" y="362" font-size="15" font-family="Menlo, monospace" fill="#1B5E9E">target, scope, authorization</text>
+  <text x="800" y="388" font-size="14" fill="#5B6771">what may be touched, and whether it was confirmed</text>
+  <text x="800" y="424" font-size="15" font-family="Menlo, monospace" fill="#1B5E9E">tool_results[], evidence[]</text>
+  <text x="800" y="450" font-size="14" fill="#5B6771">raw sandbox output — the source of every claim</text>
+  <text x="800" y="486" font-size="15" font-family="Menlo, monospace" fill="#1B5E9E">retrieved_documents[]</text>
+  <text x="800" y="512" font-size="14" fill="#5B6771">NVD advisories matched to discovered services</text>
+  <text x="800" y="548" font-size="15" font-family="Menlo, monospace" fill="#1B5E9E">findings[], risk_score, report</text>
+  <text x="800" y="574" font-size="14" fill="#5B6771">the assessment output, all derived — nothing hardcoded</text>
+  <text x="800" y="610" font-size="15" font-family="Menlo, monospace" fill="#1B5E9E">execution_history[]</text>
+  <text x="800" y="636" font-size="14" fill="#5B6771">what the UI renders live as the agent trace</text>
+  <text x="800" y="666" font-size="14" fill="#5B6771">messages[], approvals[], errors[], current_agent</text>
+
+  <!-- right panel 2: routing -->
+  <rect x="770" y="720" width="560" height="264" rx="9" fill="#FFFFFF" stroke="#1B5E9E" stroke-width="2"/>
+  <text x="800" y="758" font-size="17" font-weight="700" fill="#1B5E9E">The one conditional edge</text>
+  <text x="800" y="792" font-size="14.5" font-family="Menlo, monospace" fill="#2E3A45">workflow.add_conditional_edges(</text>
+  <text x="800" y="816" font-size="14.5" font-family="Menlo, monospace" fill="#2E3A45">    "critic",</text>
+  <text x="800" y="840" font-size="14.5" font-family="Menlo, monospace" fill="#2E3A45">    route_after_critic,</text>
+  <text x="800" y="864" font-size="14.5" font-family="Menlo, monospace" fill="#2E3A45">    {"risk": "risk", "planner": "planner"})</text>
+  <text x="800" y="906" font-size="14" fill="#5B6771">The critic can send the graph backwards. That loop is what</text>
+  <text x="800" y="928" font-size="14" fill="#5B6771">separates a state graph from a linear pipeline — evidence</text>
+  <text x="800" y="950" font-size="14" fill="#5B6771">judged too thin re-enters planning instead of being reported.</text>
+
+  <!-- ================= legend ================= -->
+  <line x1="70" y1="1046" x2="330" y2="1046" stroke="#D3DAE0" stroke-width="1.5"/>
+  <line x1="70" y1="1086" x2="120" y2="1086" stroke="#2E3A45" stroke-width="2"/>
+  <text x="134" y="1091" font-size="14" fill="#5B6771">static edge</text>
+  <line x1="70" y1="1120" x2="120" y2="1120" stroke="#1B5E9E" stroke-width="2.5"/>
+  <text x="134" y="1125" font-size="14" fill="#5B6771">conditional — proceed</text>
+  <line x1="70" y1="1154" x2="120" y2="1154" stroke="#8A94A0" stroke-width="2.5" stroke-dasharray="8 6"/>
+  <text x="134" y="1159" font-size="14" fill="#5B6771">conditional — re-plan</text>
+
+  <line x1="770" y1="1046" x2="1330" y2="1046" stroke="#D3DAE0" stroke-width="1.5"/>
+  <text x="770" y="1090" font-size="14" fill="#5B6771">Live path note: /api/chat runs the autonomous tool-calling agent</text>
+  <text x="770" y="1112" font-size="14" fill="#5B6771">(backend/agents/autonomous.py), which chooses its own tool order.</text>
+  <text x="770" y="1134" font-size="14" fill="#5B6771">This graph is the deterministic pipeline it replaced; its critic, risk</text>
+  <text x="770" y="1156" font-size="14" fill="#5B6771">and report nodes are still imported and reused by the agent.</text>
+</svg>

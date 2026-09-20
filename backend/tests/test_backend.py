@@ -39,6 +39,7 @@ def test_rag_retriever():
     assert len(results) > 0
     assert results[0].cveId == "CVE-2021-41773"
 
+@pytest.mark.live_llm
 def test_langgraph_workflow_execution():
     initial_state = {
         "conversation_id": "test-conv",

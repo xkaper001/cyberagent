@@ -50,6 +50,7 @@ def test_planner_execution():
     assert len(res["current_plan"]["steps"]) == 3
     assert res["current_plan"]["steps"][0]["agent"] == "recon"
 
+@pytest.mark.live_llm
 def test_recon_agent_execution():
     state = get_base_state()
     res = recon_agent.execute(state)
@@ -61,6 +62,7 @@ def test_scanning_agent_execution():
     res = scanning_agent.execute(state)
     assert any("open ports" in ev for ev in res["evidence"])
 
+@pytest.mark.live_llm
 def test_end_to_end_graph_execution():
     state = get_base_state("10.10.14.5")
     final_state = cyberagents_app_graph.invoke(state)
